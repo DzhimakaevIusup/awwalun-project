@@ -13,10 +13,10 @@ ANGLE_ISHA = 17.0
 
 # Тонкая настройка (подгоняем под табличку)
 TUNE = {
-    'fajr': -1,     # Убираем 1 минуту
-    'sunrise': 0,   # На 20.11 совпало, на 12.11 было +1. Оставим 0.
-    'dhuhr': 2,     # Табличка показывает на 2 минуты позже
-    'asr': 0,       # В среднем совпадает
+    'fajr': -1,     
+    'sunrise': 0,   
+    'dhuhr': 2,     
+    'asr': 0,       
     'maghrib': 0,   
     'isha': 0       
 }
@@ -86,29 +86,20 @@ def calculate_times(year, month, day):
     H_fajr = calc_hour_angle(-ANGLE_FAJR, decl)
     H_isha = calc_hour_angle(-ANGLE_ISHA, decl)
     
-    # ПРАВИЛО ВЫСОКИХ ШИРОТ (Если сумерки не наступают)
-    # Если H == "-----", значит солнце не опускается на 18 градусов. 
-    # Используем метод "Одной седьмой" (One-Seventh): 
-    # Ночь делится на 7 частей. Фаджр = Магриб + 1/7 ночи, Иша = Восход - 1/7 ночи.
     if H_fajr == "-----" or H_isha == "-----":
-        # Вычисляем длину ночи
         if H_sunrise != "-----":
             night_duration = 24.0 - (H_sunrise * 2)
             one_seventh = night_duration / 7.0
-            
-            # Фаджр: от Магриба прибавляем 1/7 ночи
             times['fajr'] = times['maghrib'] + one_seventh
-            
-            # Иша: от Восхода отнимаем 1/7 ночи
             isha_time = times['sunrise'] - one_seventh
-            # Если ушли в минус (например, -1.5 часа), прибавляем 24
             times['isha'] = isha_time + 24.0 if isha_time < 0 else isha_time
         else:
             times['fajr'] = "-----"
             times['isha'] = "-----"
     else:
         times['fajr'] = (dhuhr_local - H_fajr) if H_fajr != "-----" else "-----"
-        times['isha'] = (dhuhr_local + H_isha) if H_isha != "-----" else "-----"    
+        times['isha'] = (dhuhr_local + H_isha) if H_isha != "-----" else "-----"
+    
     # 4. Аср (Ханафитский)
     angle_asr = deg(math.atan(1.0 / (2.0 + math.tan(rad(abs(LAT - decl))))))
     H_asr = calc_hour_angle(angle_asr, decl)
@@ -120,42 +111,36 @@ def calculate_times(year, month, day):
             times[k] += TUNE[k] / 60.0
             
     return times
+
 # ==========================================
 # ИНТЕРАКТИВНЫЙ ВВОД ДАТЫ
 # ==========================================
-print("\n=== КАЛЬКУЛЯТОР ВРЕМЕНИ НАМАЗА (AZAMAN) ===")
-print("Введите дату в формате ДД.ММ.ГГГГ (например, 12.11.2026).")
-print("Или нажмите Enter, чтобы рассчитать на сегодня.")
+if __name__ == "__main__":
+    print("\n=== КАЛЬКУЛЯТОР ВРЕМЕНИ НАМАЗА (AZAMAN) ===")
+    print("Введите дату в формате ДД.ММ.ГГГГ (например, 12.11.2026).")
+    print("Или нажмите Enter, чтобы рассчитать на сегодня.")
 
-user_input = input("Ваша дата: ").strip()
+    user_input = input("Ваша дата: ").strip()
 
-if user_input == "":
-    # Если пользователь ничего не ввел, берем сегодняшнюю дату
-    target_date = datetime.now()
-    print(f"\nБерем текущую дату: {target_date.strftime('%d.%m.%Y')}")
-else:
-    # Пытаемся распарсить введенную строку
-    try:
-        # Разделяем строку по точкам и превращаем в числа
-        day, month, year = map(int, user_input.split('.'))
-        # Создаем объект даты
-        target_date = datetime(year, month, day)
-        print(f"\nРасчет для даты: {target_date.strftime('%d.%m.%Y')}")
-    except ValueError:
-        # Если пользователь ввел фигню (буквы или не тот формат)
-        print("\n[ОШИБКА] Неверный формат даты! Попробуйте еще раз (ДД.ММ.ГГГГ).")
-        exit() # Завершаем программу
+    if user_input == "":
+        target_date = datetime.now()
+        print(f"\nБерем текущую дату: {target_date.strftime('%d.%m.%Y')}")
+    else:
+        try:
+            day, month, year = map(int, user_input.split('.'))
+            target_date = datetime(year, month, day)
+            print(f"\nРасчет для даты: {target_date.strftime('%d.%m.%Y')}")
+        except ValueError:
+            print("\n[ОШИБКА] Неверный формат даты! Попробуйте еще раз (ДД.ММ.ГГГГ).")
+            exit()
 
-# ==========================================
-# ВЫВОД РЕЗУЛЬТАТА
-# ==========================================
-res = calculate_times(target_date.year, target_date.month, target_date.day)
+    res = calculate_times(target_date.year, target_date.month, target_date.day)
 
-print("-" * 30)
-for k in ['fajr', 'sunrise', 'dhuhr', 'asr', 'maghrib', 'isha']:
-    # Красиво выводим названия намазов
-    names = {
-        'fajr': 'Фаджр   ', 'sunrise': 'Восход  ', 'dhuhr': 'Зухр    ', 
-        'asr': 'Аср     ', 'maghrib': 'Магриб  ', 'isha': 'Иша     '
-    }
-    print(f"{names[k]}: {time_to_string(res[k])}")
+    print("-" * 30)
+    for k in ['fajr', 'sunrise', 'dhuhr', 'asr', 'maghrib', 'isha']:
+        names = {
+            'fajr': 'Фаджр   ', 'sunrise': 'Восход  ', 'dhuhr': 'Зухр    ', 
+            'asr': 'Аср     ', 'maghrib': 'Магриб  ', 'isha': 'Иша     '
+        }
+        print(f"{names[k]}: {time_to_string(res[k])}")
+    print("-" * 30)
